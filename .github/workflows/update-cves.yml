@@ -1,0 +1,88 @@
+name: Update CVE database
+
+on:
+  schedule:
+    # Daily at 06:15 UTC — offset from the hour to avoid GitHub Actions' peak-load scheduling delays.
+    - cron: "15 6 * * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Max CVEs to fetch this run"
+        required: false
+        default: "2000"
+      full:
+        description: "Ignore the incremental cursor and do a fuller pull"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: update-cves
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch + normalize + merge CVE data
+        run: |
+          npm run fetch -- --limit=${{ github.event.inputs.limit || '2000' }} ${{ github.event.inputs.full == 'true' && '--full' || '' }}
+
+      - name: Validate database
+        run: npm run validate
+
+      - name: Rebuild indexes and statistics
+        run: npm run index
+
+      - name: Regenerate checksums
+        run: |
+          find data -name '*.jsonl' -type f | sort | xargs -r sha256sum > SHA256SUMS
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "data: update CVE database $(date -u +%Y-%m-%d)"
+          git push
+
+      # Pushes made with the default GITHUB_TOKEN don't trigger other
+      # workflows (this avoids accidental recursive runs) — so we trigger
+      # the deploy workflow explicitly via the API instead of relying on
+      # deploy.yml's `on: push`.
+      - name: Trigger deployment
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref ${{ github.ref_name }}

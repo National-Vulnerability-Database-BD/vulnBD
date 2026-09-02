@@ -1,0 +1,77 @@
+name: Backfill historical CVEs
+
+on:
+  workflow_dispatch:
+    inputs:
+      years:
+        description: 'Years to backfill, e.g. "1999-2005", "2020,2021", or "2015"'
+        required: true
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    # Full-decade backfills can involve tens of thousands of small files —
+    # give this more headroom than the daily incremental job.
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backfill requested years
+        run: npm run backfill -- --years=${{ github.event.inputs.years }}
+
+      - name: Validate database
+        run: npm run validate
+
+      - name: Rebuild indexes and statistics
+        run: npm run index
+
+      - name: Regenerate checksums
+        run: |
+          find data -name '*.jsonl' -type f | sort | xargs -r sha256sum > SHA256SUMS
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "data: backfill CVE years ${{ github.event.inputs.years }}"
+          git push
+
+      - name: Trigger deployment
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref ${{ github.ref_name }}
