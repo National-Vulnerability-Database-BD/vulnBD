@@ -1,0 +1,46 @@
+{
+  "name": "bd-vuln-db",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "npm run validate && npm run index && npm run copy-index && npm run copy-data && astro build",
+    "copy-index": "node scripts/copy-index-to-public.mjs",
+    "copy-data": "node scripts/copy-data-to-public.mjs",
+    "preview": "astro preview",
+    "astro": "astro",
+    "fetch": "tsx scripts/ingest.ts",
+    "backfill": "tsx scripts/backfill.ts",
+    "validate": "tsx scripts/validate/run.ts",
+    "index": "tsx scripts/index/build-index.ts",
+    "stats": "tsx scripts/index/build-index.ts",
+    "cve": "tsx scripts/cli/cve.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@astrojs/react": "^6.0.4",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "astro": "^7.2.7",
+    "fast-glob": "^3.3.3",
+    "minisearch": "^7.2.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwindcss": "^4.3.3",
+    "zod": "^4.4.3"
+  },
+  "allowScripts": {
+    "esbuild": true
+  },
+  "devDependencies": {
+    "@types/node": "^26.3.0",
+    "playwright-core": "^1.62.1",
+    "tsx": "^4.23.12",
+    "vitest": "^4.1.11"
+  }
+}
