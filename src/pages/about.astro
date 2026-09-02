@@ -1,0 +1,67 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { siteConfig } from "../../config/site";
+---
+
+<Layout title="About" description="About the database, its data sources, and attribution." canonicalPath="/about">
+  <div class="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <h1 class="font-serif text-2xl font-semibold">About &amp; attribution</h1>
+
+    <div class="prose-invert mt-6 space-y-6 text-sm leading-relaxed text-text">
+      <section>
+        <h2 class="font-mono text-xs uppercase tracking-wide text-muted">About {siteConfig.name}</h2>
+        <p class="mt-2 text-muted">
+          {siteConfig.name} tracks publicly disclosed software vulnerabilities and makes them searchable for security teams,
+          researchers, system administrators, and developers across Bangladesh. Each entry is normalized into a consistent format
+          covering severity, affected products, technical detail, and remediation references, so vulnerabilities can be found and
+          assessed quickly regardless of which organization originally disclosed them.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="font-mono text-xs uppercase tracking-wide text-muted">Data sources</h2>
+        <ul class="mt-2 list-inside list-disc space-y-2 text-muted">
+          <li>
+            <strong class="text-text">CVE Program (cve.org)</strong> — the primary source for vulnerability records, updated on a
+            regular schedule.
+          </li>
+          <li>
+            <strong class="text-text">CISA Known Exploited Vulnerabilities (KEV)</strong> — optional enrichment. When a CVE appears
+            in CISA's KEV catalog, that fact is attributed to CISA explicitly and never inferred.
+          </li>
+        </ul>
+        <p class="mt-3 text-muted">
+          Every field in every record keeps track of which source it came from (see the "Data sources" panel on each vulnerability's
+          page). Source data is never merged or blended without preserving that attribution.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="font-mono text-xs uppercase tracking-wide text-muted">What we don't do</h2>
+        <p class="mt-2 text-muted">
+          We don't infer exploitation status, invent severity scores or weakness classifications that a source didn't provide, or
+          fabricate any field. Where information isn't available from a source, it's shown as unavailable — never guessed.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="font-mono text-xs uppercase tracking-wide text-muted">Attribution &amp; disclaimer</h2>
+        <p class="mt-2 text-muted">
+          Vulnerability record data is sourced from and redistributed under the terms published by the CVE Program (CVE Record data
+          is made available under CC0 1.0 by MITRE / the CVE Program); consult
+          <a href="https://www.cve.org/Legal/TermsOfUse" class="text-accent hover:underline" rel="noopener noreferrer">cve.org's terms of use</a>
+          for the authoritative statement. {siteConfig.name} is an independent project and is not affiliated with, endorsed by, or
+          officially connected to MITRE, the CVE Program, NVD, or CISA.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="font-mono text-xs uppercase tracking-wide text-muted">Contact</h2>
+        <p class="mt-2 text-muted">
+          Found an error in how a record is displayed, or something missing? Use the "Report an issue" link in the footer to let us
+          know.
+        </p>
+      </section>
+    </div>
+  </div>
+</Layout>

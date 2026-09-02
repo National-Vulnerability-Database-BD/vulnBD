@@ -1,0 +1,40 @@
+---
+interface Bar {
+  label: string;
+  value: number;
+  color?: string;
+}
+
+interface Props {
+  bars: Bar[];
+  maxBars?: number;
+  height?: number;
+}
+
+const { bars, maxBars = 12, height = 180 } = Astro.props;
+const shown = bars.slice(0, maxBars);
+const max = Math.max(1, ...shown.map((b) => b.value));
+const barWidth = 100 / shown.length;
+---
+
+<div class="w-full">
+  <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" class="h-40 w-full overflow-visible sm:h-48" role="img" aria-label="Bar chart">
+    {shown.map((b, i) => {
+      const barHeight = (b.value / max) * (height - 24);
+      const x = i * barWidth + barWidth * 0.15;
+      const w = barWidth * 0.7;
+      const y = height - 24 - barHeight;
+      return (
+        <g>
+          <rect x={x} y={y} width={w} height={barHeight} fill={b.color ?? "var(--color-accent)"} opacity="0.85" />
+          <title>{`${b.label}: ${b.value}`}</title>
+        </g>
+      );
+    })}
+  </svg>
+  <div class="mt-1 flex text-[10px] text-muted" style={`display:grid;grid-template-columns:repeat(${shown.length},1fr)`}>
+    {shown.map((b) => (
+      <span class="truncate text-center font-mono" title={b.label}>{b.label}</span>
+    ))}
+  </div>
+</div>

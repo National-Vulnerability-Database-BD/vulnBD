@@ -1,0 +1,20 @@
+---
+import type { Severity } from "../types/cve";
+import { SEVERITY_CLASSES, SEVERITY_LABEL } from "../lib/severity";
+
+interface Props {
+  severity: Severity;
+  cvss?: number | null;
+  size?: "sm" | "md";
+}
+
+const { severity, cvss = null, size = "md" } = Astro.props;
+const c = SEVERITY_CLASSES[severity];
+const padding = size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-1 text-xs";
+---
+
+<span class={`inline-flex items-center gap-1.5 border font-mono font-semibold uppercase tracking-wide ${c.bg} ${c.text} ${c.border} ${padding}`}>
+  <span class={`h-1.5 w-1.5 rounded-full ${c.dot}`} aria-hidden="true"></span>
+  {SEVERITY_LABEL[severity]}
+  {cvss !== null && <span class="opacity-80">· {cvss.toFixed(1)}</span>}
+</span>

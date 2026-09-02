@@ -1,0 +1,89 @@
+---
+import Layout from "../layouts/Layout.astro";
+import BarChart from "../components/BarChart.astro";
+import CveRow from "../components/CveRow.astro";
+import { siteConfig } from "../../config/site";
+import { getCveIndex, getStatistics } from "../lib/data";
+import { SEVERITY_CLASSES } from "../lib/severity";
+import { formatDateTime } from "../lib/severity";
+
+const stats = getStatistics();
+const index = getCveIndex();
+
+const yearBars = Object.entries(stats.byYear)
+  .sort((a, b) => a[0].localeCompare(b[0]))
+  .slice(-15)
+  .map(([label, value]) => ({ label, value }));
+
+const severityColors: Record<string, string> = {
+  CRITICAL: "var(--color-critical)",
+  HIGH: "var(--color-high)",
+  MEDIUM: "var(--color-medium)",
+  LOW: "var(--color-low)",
+  NONE: "var(--color-muted)",
+  UNKNOWN: "var(--color-muted)",
+};
+const severityBars = Object.entries(stats.bySeverity)
+  .filter(([label]) => label !== "UNKNOWN" && label !== "NONE")
+  .map(([label, value]) => ({ label, value, color: severityColors[label] }));
+
+const cvssBars = stats.cvssDistribution.map((d) => ({ label: d.bucket, value: d.count }));
+const cweBars = stats.byCwe.slice(0, 10).map((c) => ({ label: c.cweId, value: c.count }));
+const vendorBars = stats.byVendor.slice(0, 10).map((v) => ({ label: v.vendor, value: v.count }));
+
+const recentlyModified = stats.recentlyModified.slice(0, 8);
+---
+
+<Layout title="Statistics" description="Precomputed statistics across the entire CVE database." canonicalPath="/statistics">
+  <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <h1 class="font-serif text-2xl font-semibold">Statistics</h1>
+    <p class="mt-1 text-sm text-muted">Generated {formatDateTime(stats.generatedAt)} from {new Intl.NumberFormat("en-US").format(stats.totalCves)} records.</p>
+
+    <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {[
+        { label: "Total CVEs", value: stats.totalCves },
+        { label: "Critical", value: stats.bySeverity.CRITICAL ?? 0 },
+        { label: "High", value: stats.bySeverity.HIGH ?? 0 },
+        { label: "CWEs tracked", value: stats.byCwe.length },
+      ].map((s) => (
+        <div class="border border-border bg-surface p-4">
+          <p class="font-mono text-xs uppercase tracking-wide text-muted">{s.label}</p>
+          <p class="mt-1 font-mono text-2xl font-semibold">{new Intl.NumberFormat("en-US").format(s.value)}</p>
+        </div>
+      ))}
+    </div>
+
+    <div class="mt-10 grid gap-8 lg:grid-cols-2">
+      <div class="border border-border bg-surface p-5">
+        <h2 class="font-mono text-xs uppercase tracking-wide text-muted">CVEs per year (last 15)</h2>
+        <div class="mt-4"><BarChart bars={yearBars} /></div>
+      </div>
+      <div class="border border-border bg-surface p-5">
+        <h2 class="font-mono text-xs uppercase tracking-wide text-muted">Severity distribution</h2>
+        <div class="mt-4"><BarChart bars={severityBars} /></div>
+      </div>
+      <div class="border border-border bg-surface p-5">
+        <h2 class="font-mono text-xs uppercase tracking-wide text-muted">CVSS score distribution</h2>
+        <div class="mt-4"><BarChart bars={cvssBars} /></div>
+      </div>
+      <div class="border border-border bg-surface p-5">
+        <h2 class="font-mono text-xs uppercase tracking-wide text-muted">Top CWEs</h2>
+        <div class="mt-4"><BarChart bars={cweBars} /></div>
+      </div>
+      <div class="border border-border bg-surface p-5 lg:col-span-2">
+        <h2 class="font-mono text-xs uppercase tracking-wide text-muted">Vendors with the most vulnerabilities</h2>
+        <div class="mt-4"><BarChart bars={vendorBars} maxBars={10} /></div>
+      </div>
+    </div>
+
+    <div class="mt-10">
+      <h2 class="font-mono text-sm uppercase tracking-wide text-muted">Recently modified</h2>
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        {recentlyModified.map((id) => {
+          const e = index[id];
+          return e ? <CveRow id={id} severity={e.severity} cvss={e.cvss} summary={e.summary} published={e.published} lastModified={e.lastModified} /> : null;
+        })}
+      </div>
+    </div>
+  </div>
+</Layout>

@@ -1,0 +1,99 @@
+---
+import { siteConfig } from "../../config/site";
+
+const nav = [
+  { href: "/cves", label: "Browse" },
+  { href: "/statistics", label: "Statistics" },
+  { href: "/downloads", label: "Downloads" },
+  { href: "/about", label: "About" },
+];
+---
+
+<header class="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+  <div class="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6">
+    <a href={`${siteConfig.basePath}/`} class="flex shrink-0 items-center gap-2.5 font-mono text-sm font-semibold tracking-tight">
+      <span class="flex h-7 w-7 items-center justify-center border border-accent text-accent" aria-hidden="true">
+        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path d="M12 3 L20 6.5 V11.5 C20 16.5 16.6 20.3 12 21.5 C7.4 20.3 4 16.5 4 11.5 V6.5 Z" stroke-linejoin="round" />
+          <path d="M9 11.7 L11.2 14 L15.2 9.3" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </span>
+      <span class="hidden leading-tight sm:flex sm:flex-col">
+        <span>{siteConfig.name}</span>
+      </span>
+    </a>
+
+    <form action={`${siteConfig.basePath}/search`} method="get" class="flex-1">
+      <label class="sr-only" for="site-search">Search CVEs, vendors, products, or CWE</label>
+      <div class="relative">
+        <input
+          id="site-search"
+          name="q"
+          type="search"
+          placeholder="Search CVE-2026-12345, apache, CWE-79, remote code execution…"
+          class="w-full border border-border bg-surface px-3 py-2 pl-9 font-mono text-sm text-text placeholder:text-muted focus:border-accent"
+        />
+        <svg class="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+      </div>
+    </form>
+
+    <nav class="hidden items-center gap-5 font-mono text-xs uppercase tracking-wide text-muted md:flex">
+      {nav.map((item) => (
+        <a href={`${siteConfig.basePath}${item.href}`} class="transition-colors hover:text-text">
+          {item.label}
+        </a>
+      ))}
+    </nav>
+
+    <button
+      id="theme-toggle"
+      type="button"
+      aria-label="Toggle dark and light theme"
+      class="flex h-9 w-9 shrink-0 items-center justify-center border border-border text-muted hover:text-text"
+    >
+      <svg id="icon-sun" class="hidden h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+      </svg>
+      <svg id="icon-moon" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"></path>
+      </svg>
+    </button>
+  </div>
+
+  <nav class="flex items-center gap-4 overflow-x-auto border-t border-border px-4 py-2 font-mono text-xs uppercase tracking-wide text-muted md:hidden">
+    {nav.map((item) => (
+      <a href={`${siteConfig.basePath}${item.href}`} class="shrink-0 hover:text-text">
+        {item.label}
+      </a>
+    ))}
+  </nav>
+</header>
+
+<script is:inline>
+  (function () {
+    var btn = document.getElementById("theme-toggle");
+    var sun = document.getElementById("icon-sun");
+    var moon = document.getElementById("icon-moon");
+    function sync() {
+      var isLight = document.documentElement.getAttribute("data-theme") === "light";
+      sun.classList.toggle("hidden", !isLight);
+      moon.classList.toggle("hidden", isLight);
+    }
+    sync();
+    btn.addEventListener("click", function () {
+      var isLight = document.documentElement.getAttribute("data-theme") === "light";
+      if (isLight) {
+        document.documentElement.removeAttribute("data-theme");
+        localStorage.setItem("theme", "dark");
+      } else {
+        document.documentElement.setAttribute("data-theme", "light");
+        localStorage.setItem("theme", "light");
+      }
+      sync();
+    });
+  })();
+</script>

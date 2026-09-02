@@ -1,0 +1,21 @@
+---
+import Layout from "../layouts/Layout.astro";
+import SearchWidget from "../components/SearchWidget.tsx";
+import { siteConfig } from "../../config/site";
+
+const q = Astro.url.searchParams.get("q") ?? "";
+const severity = Astro.url.searchParams.get("severity") ?? "";
+const year = Astro.url.searchParams.get("year") ?? "";
+---
+
+<Layout title="Search" description="Search CVEs by ID, keyword, vendor, product, or CWE." canonicalPath="/search">
+  <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <h1 class="font-serif text-2xl font-semibold">Search</h1>
+    <p class="mt-1 text-sm text-muted">
+      Exact CVE lookup, keyword search, and filters by severity, year, vendor, and CWE.
+    </p>
+    <div class="mt-6">
+      <SearchWidget client:load basePath={siteConfig.basePath} initialQuery={q} initialSeverity={severity} initialYear={year} />
+    </div>
+  </div>
+</Layout>

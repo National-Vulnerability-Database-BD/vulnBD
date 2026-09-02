@@ -1,0 +1,19 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { siteConfig } from "../../config/site";
+---
+
+<Layout title="Not found" description="Page not found." noIndex>
+  <div class="mx-auto max-w-2xl px-4 py-24 text-center sm:px-6">
+    <p class="font-mono text-6xl font-semibold text-critical">404</p>
+    <h1 class="mt-4 font-serif text-xl font-semibold">Not found</h1>
+    <p class="mt-2 text-sm text-muted">
+      That page, or that CVE, doesn't exist in this database. It may have been rejected, reserved but not yet published, or you may have
+      the ID wrong.
+    </p>
+    <div class="mt-6 flex justify-center gap-3">
+      <a href={`${siteConfig.basePath}/search`} class="border border-border px-4 py-2 font-mono text-xs uppercase hover:border-accent">Search</a>
+      <a href={`${siteConfig.basePath}/`} class="border border-border px-4 py-2 font-mono text-xs uppercase hover:border-accent">Home</a>
+    </div>
+  </div>
+</Layout>

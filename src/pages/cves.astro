@@ -1,0 +1,17 @@
+---
+import Layout from "../layouts/Layout.astro";
+import BrowseWidget from "../components/BrowseWidget.tsx";
+import { siteConfig } from "../../config/site";
+---
+
+<Layout title="Browse CVEs" description="Browse the full CVE database with filters and sorting." canonicalPath="/cves">
+  <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <h1 class="font-serif text-2xl font-semibold">Browse</h1>
+    <p class="mt-1 text-sm text-muted">
+      Filter, sort, and page through every published record.
+    </p>
+    <div class="mt-6">
+      <BrowseWidget client:load basePath={siteConfig.basePath} />
+    </div>
+  </div>
+</Layout>

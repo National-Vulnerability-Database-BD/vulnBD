@@ -1,0 +1,75 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { siteConfig } from "../../config/site";
+import { getYearIndex, getMetadata } from "../lib/data";
+
+const years = Object.keys(getYearIndex()).sort((a, b) => Number(b) - Number(a));
+const metadata = getMetadata();
+---
+
+<Layout title="Downloads" description="Download vulnerability records by year, month, or as a complete dataset." canonicalPath="/downloads">
+  <div class="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+    <h1 class="font-serif text-2xl font-semibold">Downloads</h1>
+    <p class="mt-2 text-sm text-muted">
+      Records are available as newline-delimited JSON (JSONL) — one record per line — organized by year and month, or as a single
+      combined file below.
+    </p>
+
+    <div class="mt-8 border border-border bg-surface p-5">
+      <h2 class="font-mono text-xs uppercase tracking-wide text-muted">Complete dataset</h2>
+      <p class="mt-2 text-sm text-muted">Every published record in one file, updated whenever the database is refreshed.</p>
+      <a
+        href={`${siteConfig.basePath}/data/full-export.jsonl`}
+        class="mt-3 inline-block border border-border bg-background px-4 py-2 font-mono text-xs uppercase tracking-wide hover:border-accent"
+      >
+        Download full-export.jsonl
+      </a>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="font-mono text-sm uppercase tracking-wide text-muted">By year</h2>
+      <div class="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
+        {years.map((y) => (
+          <a href={`${siteConfig.basePath}/year/${y}`} class="border border-border bg-surface px-3 py-2 text-center font-mono text-sm hover:border-accent">
+            {y}
+          </a>
+        ))}
+      </div>
+      <p class="mt-2 text-xs text-muted">Each year page links to that year's monthly files directly.</p>
+    </div>
+
+    <div class="mt-8 grid gap-4 sm:grid-cols-2">
+      <a href={`${siteConfig.basePath}/index/metadata.json`} class="border border-border bg-surface p-4 hover:border-accent">
+        <p class="font-mono text-sm font-semibold">Metadata</p>
+        <p class="mt-1 text-sm text-muted">Record counts, per-source freshness, and schema version.</p>
+      </a>
+      <a href={`${siteConfig.basePath}/index/statistics.json`} class="border border-border bg-surface p-4 hover:border-accent">
+        <p class="font-mono text-sm font-semibold">Statistics</p>
+        <p class="mt-1 text-sm text-muted">Precomputed aggregate statistics used throughout the site.</p>
+      </a>
+    </div>
+
+    <div class="mt-8 border border-border bg-surface p-5">
+      <h2 class="font-mono text-xs uppercase tracking-wide text-muted">Integrity</h2>
+      <p class="mt-2 text-sm text-muted">
+        A <a href={`${siteConfig.basePath}/SHA256SUMS`} class="text-accent hover:underline">checksum file</a> is published alongside
+        each data update, covering every monthly file, so you can verify a download wasn't corrupted or altered in transit.
+      </p>
+    </div>
+
+    <div class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div class="border border-border p-4">
+        <p class="font-mono text-xs uppercase text-muted">Records</p>
+        <p class="mt-1 font-mono text-xl">{new Intl.NumberFormat("en-US").format(metadata.records)}</p>
+      </div>
+      <div class="border border-border p-4">
+        <p class="font-mono text-xs uppercase text-muted">Schema version</p>
+        <p class="mt-1 font-mono text-xl">v{metadata.schemaVersion}</p>
+      </div>
+      <div class="border border-border p-4">
+        <p class="font-mono text-xs uppercase text-muted">Last updated</p>
+        <p class="mt-1 font-mono text-sm">{new Date(metadata.lastUpdate).toLocaleString()}</p>
+      </div>
+    </div>
+  </div>
+</Layout>

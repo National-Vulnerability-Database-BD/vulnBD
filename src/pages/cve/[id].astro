@@ -1,0 +1,294 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import SeverityBadge from "../../components/SeverityBadge.astro";
+import { siteConfig } from "../../../config/site";
+import { getCveIndex, getRecordById } from "../../lib/data";
+import { formatDate, formatDateTime } from "../../lib/severity";
+import { parseCvssVector } from "../../lib/cvss-vector";
+import type { CvssMetric } from "../../types/cve";
+
+export async function getStaticPaths() {
+  const index = getCveIndex();
+  return Object.keys(index).map((id) => ({ params: { id } }));
+}
+
+const { id } = Astro.params;
+const record = id ? getRecordById(id) : null;
+
+if (!record) {
+  return Astro.redirect(`${siteConfig.basePath}/404`, 404);
+}
+
+const cvssVersions: { key: string; label: string; metric: CvssMetric | null }[] = [
+  { key: "v4_0", label: "CVSS v4.0", metric: record.cvss.v4_0 },
+  { key: "v3_1", label: "CVSS v3.1", metric: record.cvss.v3_1 },
+  { key: "v3_0", label: "CVSS v3.0", metric: record.cvss.v3_0 },
+  { key: "v2", label: "CVSS v2", metric: record.cvss.v2 },
+].filter((c) => c.metric !== null);
+
+const description = record.description || record.summary || "No description is available from the source data for this record.";
+const title = `${record.id} — ${record.severity.overall !== "UNKNOWN" ? record.severity.overall + " severity" : "Vulnerability"}`;
+const metaDescription = (record.summary || description).slice(0, 155);
+---
+
+<Layout title={record.id} description={metaDescription} ogType="article" canonicalPath={`/cve/${record.id}`}>
+  <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <nav class="font-mono text-xs text-muted">
+      <a href={`${siteConfig.basePath}/cves`} class="hover:text-accent">Browse</a>
+      <span class="mx-1.5">/</span>
+      <span>{record.id}</span>
+    </nav>
+
+    <header class="mt-4 border-b border-border pb-6">
+      <div class="flex flex-wrap items-center gap-3">
+        <h1 class="font-mono text-2xl font-semibold sm:text-3xl">{record.id}</h1>
+        <SeverityBadge severity={record.severity.overall} cvss={record.severity.cvss} />
+        {record.state !== "PUBLISHED" && (
+          <span class="border border-border px-2 py-1 font-mono text-xs uppercase text-muted">{record.state}</span>
+        )}
+      </div>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <button type="button" class="copy-btn border border-border px-3 py-1.5 font-mono text-xs hover:border-accent" data-copy={record.id}>
+          Copy CVE ID
+        </button>
+        {cvssVersions[0] && (
+          <button type="button" class="copy-btn border border-border px-3 py-1.5 font-mono text-xs hover:border-accent" data-copy={cvssVersions[0].metric!.vectorString}>
+            Copy CVSS vector
+          </button>
+        )}
+        <button type="button" id="copy-url" class="copy-btn border border-border px-3 py-1.5 font-mono text-xs hover:border-accent">
+          Copy share link
+        </button>
+        <a href={`${siteConfig.basePath}/cve/${record.id}.json`} class="border border-border px-3 py-1.5 font-mono text-xs hover:border-accent">
+          Raw JSON ↗
+        </a>
+        <a href={siteConfig.issuesUrl} rel="noopener noreferrer" class="border border-border px-3 py-1.5 font-mono text-xs text-muted hover:border-accent hover:text-text">
+          Report an issue with this record
+        </a>
+      </div>
+    </header>
+
+    <section class="mt-6 grid gap-8 lg:grid-cols-3">
+      <div class="space-y-8 lg:col-span-2">
+        <div>
+          <h2 class="font-mono text-xs uppercase tracking-wide text-muted">Description</h2>
+          <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-text">{description}</p>
+        </div>
+
+        {cvssVersions.length > 0 && (
+          <div>
+            <h2 class="font-mono text-xs uppercase tracking-wide text-muted">CVSS</h2>
+            <div class="mt-3 space-y-4">
+              {cvssVersions.map(({ label, metric }) => {
+                const parsed = parseCvssVector(metric!.vectorString);
+                return (
+                  <div class="border border-border bg-surface p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <span class="font-mono text-sm font-semibold">{label}</span>
+                      <SeverityBadge severity={metric!.baseSeverity} cvss={metric!.baseScore} size="sm" />
+                    </div>
+                    <p class="mt-2 break-all font-mono text-xs text-muted">{metric!.vectorString}</p>
+                    <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+                      {parsed.metrics.map((m) => (
+                        <div>
+                          <dt class="text-[11px] text-muted">{m.label}</dt>
+                          <dd class="font-mono text-xs">{m.valueLabel}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    {(metric!.exploitabilityScore !== null || metric!.impactScore !== null) && (
+                      <div class="mt-3 flex gap-6 border-t border-border pt-3">
+                        {metric!.exploitabilityScore !== null && (
+                          <div>
+                            <dt class="text-[11px] text-muted">Exploitability</dt>
+                            <dd class="font-mono text-xs">{metric!.exploitabilityScore}</dd>
+                          </div>
+                        )}
+                        {metric!.impactScore !== null && (
+                          <div>
+                            <dt class="text-[11px] text-muted">Impact</dt>
+                            <dd class="font-mono text-xs">{metric!.impactScore}</dd>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {record.cwe.length > 0 && (
+          <div>
+            <h2 class="font-mono text-xs uppercase tracking-wide text-muted">Weaknesses (CWE)</h2>
+            <ul class="mt-2 space-y-2">
+              {record.cwe.map((c) => (
+                <li>
+                  <a href={`${siteConfig.basePath}/cwe/${c.cweId}`} class="inline-flex items-center gap-2 border border-border bg-surface px-3 py-2 text-sm hover:border-accent">
+                    <span class="font-mono font-semibold">{c.cweId}</span>
+                    {c.name && <span class="text-muted">{c.name}</span>}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {record.affected.length > 0 && (
+          <div>
+            <h2 class="font-mono text-xs uppercase tracking-wide text-muted">Affected products</h2>
+            <div class="mt-2 overflow-x-auto border border-border">
+              <table class="w-full min-w-[500px] text-left text-sm">
+                <thead class="bg-surface text-[11px] uppercase text-muted">
+                  <tr>
+                    <th class="px-3 py-2 font-mono font-medium">Vendor</th>
+                    <th class="px-3 py-2 font-mono font-medium">Product</th>
+                    <th class="px-3 py-2 font-mono font-medium">Affected versions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {record.affected.map((a) => (
+                    <tr class="border-t border-border">
+                      <td class="px-3 py-2">
+                        <a href={`${siteConfig.basePath}/vendor/${encodeURIComponent(a.vendor)}`} class="hover:text-accent">{a.vendor}</a>
+                      </td>
+                      <td class="px-3 py-2">{a.product}</td>
+                      <td class="px-3 py-2 font-mono text-xs text-muted">
+                        {a.versions.length === 0
+                          ? "—"
+                          : a.versions
+                              .map((v) => {
+                                if (v.version && v.versionEndExcluding) return `${v.version} to < ${v.versionEndExcluding}`;
+                                if (v.version && v.versionEndIncluding) return `${v.version} to ≤ ${v.versionEndIncluding}`;
+                                return v.version ?? (v.versionEndExcluding ? `< ${v.versionEndExcluding}` : "unspecified");
+                              })
+                              .join(", ")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {record.references.length > 0 && (
+          <div>
+            <h2 class="font-mono text-xs uppercase tracking-wide text-muted">References</h2>
+            <ul class="mt-2 space-y-2">
+              {record.references.map((r) => (
+                <li class="border border-border bg-surface p-3">
+                  <a href={r.url} rel="noopener noreferrer nofollow" target="_blank" class="break-all text-sm text-accent hover:underline">
+                    {r.url}
+                  </a>
+                  {r.tags.length > 0 && (
+                    <div class="mt-1.5 flex flex-wrap gap-1.5">
+                      {r.tags.map((t) => (
+                        <span class="border border-border px-1.5 py-0.5 font-mono text-[10px] uppercase text-muted">{t}</span>
+                      ))}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {record.credits.length > 0 && (
+          <div>
+            <h2 class="font-mono text-xs uppercase tracking-wide text-muted">Credits</h2>
+            <ul class="mt-2 flex flex-wrap gap-2">
+              {record.credits.map((c) => (
+                <li class="border border-border bg-surface px-3 py-1.5 text-sm">{c.name}{c.type && <span class="text-muted"> · {c.type}</span>}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <aside class="space-y-6">
+        <div class="border border-border bg-surface p-4">
+          <h2 class="font-mono text-xs uppercase tracking-wide text-muted">Timeline</h2>
+          <dl class="mt-3 space-y-3 text-sm">
+            <div>
+              <dt class="text-[11px] text-muted">Published</dt>
+              <dd class="font-mono">{formatDate(record.published)}</dd>
+            </div>
+            <div>
+              <dt class="text-[11px] text-muted">Last modified</dt>
+              <dd class="font-mono">{formatDate(record.lastModified)}</dd>
+            </div>
+            {record.withdrawn && (
+              <div>
+                <dt class="text-[11px] text-muted">Withdrawn</dt>
+                <dd class="font-mono">{formatDate(record.withdrawn)}</dd>
+              </div>
+            )}
+            <div>
+              <dt class="text-[11px] text-muted">Status</dt>
+              <dd class="font-mono">{record.state}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="border border-border bg-surface p-4">
+          <h2 class="font-mono text-xs uppercase tracking-wide text-muted">Data sources</h2>
+          <ul class="mt-3 space-y-1.5 text-sm">
+            {record.sources.map((s) => (
+              <li class="flex items-center gap-2">
+                <span class="h-1.5 w-1.5 rounded-full bg-accent"></span>
+                {s}
+                {s === record.primarySource && <span class="text-[11px] text-muted">(primary)</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {record.exploit?.maturity === "known-exploited" && record.exploit.kev && (
+          <div class="border border-critical/40 bg-critical/10 p-4">
+            <h2 class="font-mono text-xs uppercase tracking-wide text-critical">Known Exploited Vulnerability</h2>
+            <p class="mt-2 text-xs text-muted">Per CISA's KEV catalog:</p>
+            <dl class="mt-2 space-y-2 text-sm">
+              <div>
+                <dt class="text-[11px] text-muted">Date added</dt>
+                <dd class="font-mono">{formatDate(record.exploit.kev.dateAdded)}</dd>
+              </div>
+              {record.exploit.kev.dueDate && (
+                <div>
+                  <dt class="text-[11px] text-muted">Remediation due</dt>
+                  <dd class="font-mono">{formatDate(record.exploit.kev.dueDate)}</dd>
+                </div>
+              )}
+              {record.exploit.kev.requiredAction && (
+                <div>
+                  <dt class="text-[11px] text-muted">Required action</dt>
+                  <dd>{record.exploit.kev.requiredAction}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        )}
+      </aside>
+    </section>
+  </div>
+
+  <script define:vars={{ shareUrl: Astro.url.href }}>
+    document.querySelectorAll(".copy-btn[data-copy]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        navigator.clipboard?.writeText(btn.getAttribute("data-copy") || "");
+        const original = btn.textContent;
+        btn.textContent = "Copied!";
+        setTimeout(() => (btn.textContent = original), 1200);
+      });
+    });
+    const copyUrlBtn = document.getElementById("copy-url");
+    copyUrlBtn?.addEventListener("click", () => {
+      navigator.clipboard?.writeText(shareUrl);
+      const original = copyUrlBtn.textContent;
+      copyUrlBtn.textContent = "Copied!";
+      setTimeout(() => (copyUrlBtn.textContent = original), 1200);
+    });
+  </script>
+</Layout>

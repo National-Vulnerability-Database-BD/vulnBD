@@ -1,0 +1,51 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import CveRow from "../../components/CveRow.astro";
+import { siteConfig } from "../../../config/site";
+import { getCveIndex, getVendorIndex, getAllSearchDocs } from "../../lib/data";
+
+export async function getStaticPaths() {
+  const vendors = getVendorIndex();
+  // A vendor name containing "/" can't be a single URL path segment — skip
+  // it here (it's still fully searchable via /search?q=vendor:...).
+  return Object.keys(vendors)
+    .filter((v) => !v.includes("/"))
+    .map((vendor) => ({ params: { vendor } }));
+}
+
+const { vendor } = Astro.params;
+const vendorName = vendor ?? "";
+const index = getCveIndex();
+const docs = getAllSearchDocs();
+
+const matching = docs.filter((d) => d.vendors.some((v) => v === vendorName));
+const products = [...new Set(matching.flatMap((d) => d.products))].sort();
+const entries = matching.map((d) => [d.id, index[d.id]] as const).filter(([, e]) => Boolean(e));
+const sorted = entries.sort((a, b) => (b[1].published ?? "").localeCompare(a[1].published ?? ""));
+---
+
+<Layout title={vendorName} description={`CVEs affecting products from ${vendorName}.`} canonicalPath={`/vendor/${encodeURIComponent(vendorName)}`}>
+  <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <h1 class="font-serif text-2xl font-semibold">{vendorName}</h1>
+    <p class="mt-1 text-sm text-muted">{sorted.length} CVE{sorted.length === 1 ? "" : "s"} across {products.length} product{products.length === 1 ? "" : "s"}.</p>
+
+    {products.length > 0 && (
+      <div class="mt-4 flex flex-wrap gap-2">
+        {products.slice(0, 20).map((p) => (
+          <span class="border border-border bg-surface px-2.5 py-1 text-xs">{p}</span>
+        ))}
+      </div>
+    )}
+
+    <div class="mt-8 space-y-3">
+      {sorted.slice(0, 100).map(([id, e]) => (
+        <CveRow id={id} severity={e.severity} cvss={e.cvss} summary={e.summary} published={e.published} lastModified={e.lastModified} vendor={vendorName} />
+      ))}
+    </div>
+    {sorted.length > 100 && (
+      <p class="mt-4 text-center text-sm text-muted">
+        Showing the 100 most recent. <a href={`${siteConfig.basePath}/search?q=vendor:${encodeURIComponent(vendorName)}`} class="text-accent hover:underline">Search for more →</a>
+      </p>
+    )}
+  </div>
+</Layout>

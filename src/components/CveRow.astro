@@ -1,0 +1,38 @@
+---
+import { siteConfig } from "../../config/site";
+import SeverityBadge from "./SeverityBadge.astro";
+import { formatDate } from "../lib/severity";
+import type { Severity } from "../types/cve";
+
+interface Props {
+  id: string;
+  severity: Severity;
+  cvss: number | null;
+  summary: string | null;
+  published: string | null;
+  lastModified?: string | null;
+  cwe?: string[];
+  vendor?: string | null;
+}
+
+const { id, severity, cvss, summary, published, lastModified, cwe = [], vendor } = Astro.props;
+---
+
+<a
+  href={`${siteConfig.basePath}/cve/${id}`}
+  class="group block border border-border bg-surface p-4 transition-colors hover:border-accent focus-visible:border-accent"
+>
+  <div class="flex flex-wrap items-center gap-2">
+    <span class="font-mono text-sm font-semibold text-text group-hover:text-accent">{id}</span>
+    <SeverityBadge severity={severity} cvss={cvss} size="sm" />
+    {cwe.slice(0, 2).map((c) => (
+      <span class="border border-border px-1.5 py-0.5 font-mono text-[11px] text-muted">{c}</span>
+    ))}
+    {vendor && <span class="text-[11px] text-muted">{vendor}</span>}
+  </div>
+  {summary && <p class="mt-2 line-clamp-2 text-sm text-muted">{summary}</p>}
+  <div class="mt-3 flex gap-4 font-mono text-[11px] text-muted">
+    <span>Published {formatDate(published)}</span>
+    {lastModified && <span>Modified {formatDate(lastModified)}</span>}
+  </div>
+</a>

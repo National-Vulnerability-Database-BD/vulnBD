@@ -1,0 +1,49 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import CveRow from "../../components/CveRow.astro";
+import { siteConfig } from "../../../config/site";
+import { getCveIndex, getCweIndex, getAllSearchDocs } from "../../lib/data";
+
+export async function getStaticPaths() {
+  const cweIndex = getCweIndex();
+  return Object.keys(cweIndex).map((cweId) => ({ params: { id: cweId } }));
+}
+
+const { id } = Astro.params;
+const cweIndex = getCweIndex();
+const meta = id ? cweIndex[id] : undefined;
+const index = getCveIndex();
+const docs = getAllSearchDocs();
+
+const matchingIds = docs.filter((d) => d.cwe.includes(id ?? "")).map((d) => d.id);
+const entries = matchingIds.map((cid) => [cid, index[cid]] as const).filter(([, e]) => Boolean(e));
+const sorted = entries.sort((a, b) => (b[1].published ?? "").localeCompare(a[1].published ?? ""));
+
+const severityCounts = new Map<string, number>();
+for (const [, e] of sorted) severityCounts.set(e.severity, (severityCounts.get(e.severity) ?? 0) + 1);
+---
+
+<Layout title={id ?? "CWE"} description={`CVEs associated with ${id}${meta?.name ? " — " + meta.name : ""}.`} canonicalPath={`/cwe/${id}`}>
+  <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <h1 class="font-mono text-2xl font-semibold">{id}</h1>
+    {meta?.name && <p class="mt-1 text-lg text-text">{meta.name}</p>}
+    <p class="mt-1 text-sm text-muted">{sorted.length} associated CVE{sorted.length === 1 ? "" : "s"} in this database.</p>
+
+    <div class="mt-6 flex flex-wrap gap-2">
+      {[...severityCounts.entries()].map(([sev, count]) => (
+        <span class="border border-border bg-surface px-2.5 py-1 font-mono text-xs">{sev}: {count}</span>
+      ))}
+    </div>
+
+    <div class="mt-8 space-y-3">
+      {sorted.slice(0, 100).map(([cid, e]) => (
+        <CveRow id={cid} severity={e.severity} cvss={e.cvss} summary={e.summary} published={e.published} lastModified={e.lastModified} />
+      ))}
+    </div>
+    {sorted.length > 100 && (
+      <p class="mt-4 text-center text-sm text-muted">
+        Showing the 100 most recent. <a href={`${siteConfig.basePath}/search?q=${id}`} class="text-accent hover:underline">Search for more →</a>
+      </p>
+    )}
+  </div>
+</Layout>
