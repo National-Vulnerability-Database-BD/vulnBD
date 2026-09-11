@@ -1,7 +1,7 @@
 {
-  "lastUpdate": "2026-09-10T11:20:36.984Z",
+  "lastUpdate": "2026-09-11T11:22:44.872Z",
   "schemaVersion": 1,
-  "records": 268492,
+  "records": 268881,
   "years": {
     "1999": 321,
     "2000": 1468,
@@ -30,12 +30,12 @@
     "2023": 26679,
     "2024": 39767,
     "2025": 8824,
-    "2026": 9743
+    "2026": 10132
   },
   "sources": {
     "cve.org": {
-      "lastFetched": "2026-09-10T11:20:36.984Z",
-      "recordsContributed": 268492
+      "lastFetched": "2026-09-11T11:22:44.872Z",
+      "recordsContributed": 268881
     }
   }
 }
